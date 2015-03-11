@@ -10,7 +10,7 @@ import MySQLHandler
 import SendMsgHandler
 import exceptions
 
-#定义自己异常
+'''定义自己异常'''
 class MyException(Exception):
     def __init__(self):
         Exception.__init__(self)
@@ -57,7 +57,7 @@ class MySQLItems(object):
         else:
             return 1
 
-#主从同步,跳过当前sql
+	'''主从同步,跳过当前sql'''
     def set_skip_counter(self):
         sql = "set global sql_slave_skip_counter=1;"
         ret = self.dbhandler.execute_sql(sql)
@@ -66,7 +66,7 @@ class MySQLItems(object):
             now_msg = "%s (%s) %s %s:%s excute sql(set global sql_slave_skip_counter) failed %s @new_mon" % (self.mysql_class,self.usefor,self.role,self.host,self.port,now_date)        
             self.sendmsg.send_sms_class(self.mysql_class,now_msg)            
 
-#start slave
+	'''start slave'''
     def start_slave(self):
         sql = 'start slave;'
         ret = self.dbhandler.execute_sql(sql)
@@ -75,7 +75,7 @@ class MySQLItems(object):
             now_msg = "%s (%s) %s %s:%s excute sql faild while start slave %s @new_mon" % (self.mysql_class,self.usefor,self.role,self.host,self.port,now_date) 
             self.sendmsg.send_sms_class(self.mysql_class,now_msg)
 
-#stop slave
+	'''stop slave'''
     def stop_slave(self):
         sql = 'stop slave;'
         ret = self.dbhandler.execute_sql(sql)
@@ -84,7 +84,7 @@ class MySQLItems(object):
             now_msg = "%s (%s) %s %s:%s excute sql faild while stop slave %s @new_mon" % (self.mysql_class,self.usefor,self.role,self.host,self.port,now_date)
             self.sendmsg.send_sms_class(self.mysql_class,now_msg)
 
-#根据产品线获取连接数的阀值
+	'''根据产品线获取连接数的阀值'''
     def get_connections_threshold(self):
         sql = "select thread_threshold from dba_stats.monitor_class where class='%s' limit 1" % self.mysql_class
         sql_data = self.logkuhandler.get_mysql_data(sql)        
@@ -97,7 +97,7 @@ class MySQLItems(object):
             thread_ttl = sql_data[0][0]
             return thread_ttl
 
-#检查连接数有没有超过指定阀值
+	'''检查连接数有没有超过指定阀值'''
     def check_mysql_connections(self):
         sql = "show global status like 'Threads_connected';"
         data = self.dbhandler.get_mysql_data(sql)
@@ -114,7 +114,7 @@ class MySQLItems(object):
                     now_msg = "%s (%s) %s %s:%s now Threads %s %s @new_mon" % (self.mysql_class,self.usefor,self.role,self.host,self.port,count,now_date)
                     self.sendmsg.send_sms_class(self.mysql_class,now_msg)
 
-#获取当前时间的mysql主从延迟阀值
+	'''获取当前时间的mysql主从延迟阀值'''
     def get_now_lag_ttl(self):
         hour = '%H'
         now_hour = int(time.strftime(hour, time.localtime()))
@@ -133,7 +133,7 @@ class MySQLItems(object):
             now_lag_ttl = sql_data[0][0]
             return now_lag_ttl
     
-#返回'show slave status'的数据
+	'''返回'show slave status'的数据'''
     def get_slave_data(self):
         sql = 'show slave status'
         all_data  = self.dbhandler.get_mysql_data(sql)
@@ -145,7 +145,7 @@ class MySQLItems(object):
         else:
             return all_data[0]
     
-#检查是否有主从同步错误,有就根据错误类型执行相关操作并报警,没有就返回延迟数值        
+	'''检查是否有主从同步错误,有就根据错误类型执行相关操作并报警,没有就返回延迟数值'''
     def check_slave_err(self):
         slave_data = self.get_slave_data()
         if slave_data != 0:
@@ -186,7 +186,7 @@ class MySQLItems(object):
                 raise MyException()
                 
 
-#检查主从延迟是否超过阀值
+	'''检查主从延迟是否超过阀值'''
     def check_slave_lag(self):
         ret = self.check_slave_err()
         if ret is not None:
@@ -198,7 +198,7 @@ class MySQLItems(object):
                     now_msg = "%s (%s) %s %s:%s SecBehMaster %s %s @new_mon" % (self.mysql_class,self.usefor,self.role,self.host,self.port,now_lag,now_date)
                     self.sendmsg.send_sms_class(self.mysql_class,now_msg)
 
-#根据角色的不同,判断read_only状态是否正确
+	'''根据角色的不同,判断read_only状态是否正确'''
     def check_read_only(self):
         sql = 'select @@read_only;'
         sql_data = self.dbhandler.get_mysql_data(sql)
@@ -219,7 +219,7 @@ class MySQLItems(object):
                     now_msg = "%s (%s) %s %s:%s read_only Must Be 0 %s @new_mon" % (self.mysql_class,self.usefor,self.role,self.host,self.port,now_date)
                     self.sendmsg.send_sms_class(self.mysql_class,now_msg)
     
-#检查关闭监控的主机端口是否到了开启监控的时间,到则打开,没到则跳过监控
+	'''检查关闭监控的主机端口是否到了开启监控的时间,到则打开,没到则跳过监控'''
     def open_monitor(self):
         get_sql = "select UNIX_TIMESTAMP(one_starttime) from dba_stats.monitor_conf where host='%s' and port=%s limit 1" % (self.host,self.port)
         update_sql = "update dba_stats.monitor_conf set is_mon=1 where host='%s' and port=%s limit 1" % (self.host,self.port)
@@ -240,7 +240,7 @@ class MySQLItems(object):
             self.sendmsg.send_sms_class('log',now_msg)
 
 
-#根据角色的不同,分配不同的监控项
+	'''根据角色的不同,分配不同的监控项'''
     def start_mon(self):
         if self.is_mon == 0:
             self.open_monitor()
